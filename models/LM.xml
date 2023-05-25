@@ -186,17 +186,13 @@ double m=0.1;         // Mass of water in each section. kg ........m=V/3
 double C_w= 4180.0;      // J/kgK
 //double T_amb=22.0+273.15;   //Ambient temperature. K
 double T_amb=20.0;   //Ambient temperature. K
-double md_hp= 0.32671;    // Flow heat pump. kg/s-------------now kg/minute
-double md_fh= 0.3267;    // Flow floor heating. kg/s----------now kg/minute
-double md_12;
-double md_23;
-double U_vDown= 0.6;     //Heat conductivity downward. j/K
-double U_vUp= 0.6;    //Heat conductivity upward. j/K
+double md_hp= 0.32671;    // Flow heat pump. kg/s-------------now kg/minute //  F_hp
+double md_fh= 0.3267;    // Flow floor heating. kg/s----------now kg/minute //  F_fh
+double md_xy; // F_xy in the paper
 double U_v1=0.6;
 double U_v2=0.6;
 double U_a= 1.5;         // Heat conductivity to ambient. j/Km2
-double A2 = 0.0;  // Area of the  middle section m2 ....0.2512 .........A2= (2.0*pi_value*r*(H/3.0));
-double A1 = 0.0; // Area of top and bottom section m2...0.3768   .....A1= pi_value*r*r+A2;
+double A=0.0;  // Area of any layer
 //double T_fhretur= 25.0+273.15; //Temperature of water from floor heating, C
 double T_fhretur= 25.0; //Temperature of water from floor heating, C
 double T_forward = get_forward_temp();
@@ -322,7 +318,7 @@ void store_tank_related_data(){
     {   
         TBs[i] = T[i];
     }
-    save_tank_related_data(TBs, T_forward, md_hp, md_fh, consumed_power, heat_produced,"LM", levels, m, A1, A2);
+    save_tank_related_data(TBs, T_forward, md_hp, md_fh, consumed_power, heat_produced,"LM", levels, m, A, A);
 }
 
 // For Historical Data
@@ -383,85 +379,13 @@ void set_massflow(){
     Tforward_before_mixing = T[0];
     Tforward = Treturn_total*(mixing_value) + Tforward_before_mixing*(1-mixing_value);
 }
-/*void initialize_values(){
-    V= pi_value*r*r*H*1000.0;
-    m= V/3.0;
-    A2= (2.0*pi_value*r*(H/3.0));
-    A1= pi_value*r*r+A2;
-    Q_hp = Power*COP_hp;
 
-    for( r : id_t)
-    {   
-        temp = massflow[r]*is_massflow_on[r];
-        temp2 = temp2+temp;
-    }
-    if(temp2==0.0){
-        md_fh=0.0;
-    }
-    else{
-        md_fh=temp2;  
-    }
-    if (consumed_power==0){
-        md_hp=0.0001;
-    }
-    else{
-        md_hp =0.0292 + ((consumed_power-0.625)/0.1875)*0.0292;
-    }
-    T_forward= (heat_produced*1000)/(md_hp*C_w)+T[2];
-    
-}*/
-
-/*void COP(){
-    T_brine= Toutdoor;
-    //md_hp = 0.03;
-    //T_forward= Q_hp/(md_hp*C_w)+T[2];
-    //T_forward= Q_hp/(md_hp*C_w)+(T[2]-273.15);
-    delta_T = T_forward - T_brine;
-    if(delta_T != 0.0){
-        COP_Carnot = T_forward/delta_T;
-        //eta = -0.02623*Power/1000 + 0.0010993*deltaT + 0.4016;
-        ETA = -0.07185*Power/1000 + (-0.02314)*delta_T + 4.57996;
-        COP_hp = ETA*COP_Carnot;
-        //Q_hp = Power*COP_hp*1000;
-
-    }
-    else
-        //Q_hp= 0;
-        COP_hp=0;
-    //T_hp= T_forward+273.15;
-    //T_hp= T_forward;
-    /*if(T[0] &gt;= 90.0)
-    {
-        T_hp = T[0];
-        //md_hp = 0.03;
-        Power=0.0;
-        
-    }
-    else
-    {
-        T_hp= T_forward;
-        //md_hp = 0.03;
-        Power=2.5;
-        count =count+1;
-    }
-}*/
 void conductivity(){
-    /*if (T[0]&gt;T[1])
-        U_v1=U_vDown;
-    else
-        U_v1=U_vUp;
-    if (T[1]&gt;T[2])
-        U_v2=U_vDown;
-    else
-        U_v2=U_vUp;*/
-
     if(md_hp &gt; md_fh){
-        md_12 = md_hp - md_fh;
-        md_23 = md_hp - md_fh;
+        md_xy = md_hp - md_fh;
     }
     else{
-        md_12 = -md_hp + md_fh;
-        md_23 = -md_hp + md_fh;
+        md_xy = -md_hp + md_fh;
     }
 }
 void massflows_hp_fh(){
@@ -484,7 +408,6 @@ void massflows_hp_fh(){
     else{
         md_hp =0.0297 + ((consumed_power-0.625)/0.1875)*0.0297;
     }
-    //T_forward= (heat_produced*1000)/(md_hp*C_w)+T[2];
 }
 void init_values(){
     int r;
@@ -498,8 +421,7 @@ void init_values(){
     //A1 = 1.0/levels; //area per level .....total_area/levels
     //A2 = 1.0/levels;  //area per level .....total_area/levels
     m = Volume/levels;
-    A1 = Area/levels; //area per level .....total_area/levels
-    A2 = Area/levels;  //area per level .....total_area/levels 
+    A = Area/levels; //area per level .....total_area/levels
 }
 
 
@@ -551,7 +473,7 @@ Toutdoor'==(ambient_rate+random(7.9)-(7.9/2))/hour_c</label>
 		<init ref="id0"/>
 	</template>
 	<template>
-		<name>Fetch_Data</name>
+		<name>DataReader</name>
 		<declaration>clock x;
 
 
@@ -576,7 +498,7 @@ x=0</label>
 		</transition>
 	</template>
 	<template>
-		<name>Optimization</name>
+		<name>FitnessFunction</name>
 		<declaration>
 import "./libraries/weights" {
 
@@ -696,19 +618,19 @@ heat_produced=0</label>
 		</transition>
 	</template>
 	<template>
-		<name>Buffer_Tank</name>
+		<name>BufferTank</name>
 		<declaration>double calculate_top(){
     if (md_hp &gt; md_fh)
-        return ((md_hp * C_w * T_forward)-(md_fh * C_w * T[0]) - (md_12*C_w*T[0]) - (U_a*A1*(T[0]-Toutdoor)) + (U_v1*(T[0]-T[1])))/(m*C_w);
+        return ((md_hp * C_w * T_forward)-(md_fh * C_w * T[0]) - (md_xy*C_w*T[0]) - (U_a*A*(T[0]-Toutdoor)) + (U_v1*(T[0]-T[1])))/(m*C_w);
     else 
-        return ((md_hp * C_w * T_forward) - (md_fh * C_w * T[0]) + (md_12 *C_w*T[1]) - (U_a*A1*(T[0]-Toutdoor)) + (U_v1*(T[0]-T[1])))/(m*C_w);
+        return ((md_hp * C_w * T_forward) - (md_fh * C_w * T[0]) + (md_xy *C_w*T[1]) - (U_a*A*(T[0]-Toutdoor)) + (U_v1*(T[0]-T[1])))/(m*C_w);
 }
 
 double calculate_bottom(){
     if (md_hp &gt; md_fh)
-        return ((md_fh*C_w *Treturn_total) - (md_hp* C_w * T[levels-1])  + (md_23*C_w *T[levels-2]) -  (U_a*A1*(T[levels-1]-Toutdoor)) - (U_v2*(T[levels-2]-T[levels-1])))/(m*C_w); //Treturn_total .....T_fhretur
+        return ((md_fh*C_w *Treturn_total) - (md_hp* C_w * T[levels-1])  + (md_xy*C_w *T[levels-2]) -  (U_a*A*(T[levels-1]-Toutdoor)) - (U_v2*(T[levels-2]-T[levels-1])))/(m*C_w); //Treturn_total .....T_fhretur
     else
-        return ((md_fh*C_w *Treturn_total) - (md_hp* C_w * T[levels-1])  - (md_23*C_w *T[levels-1])  -  (U_a*A1*(T[levels-1]-Toutdoor)) - (U_v2*(T[levels-2]-T[levels-1])))/(m*C_w);  //Treturn_total ....T_fhretur
+        return ((md_fh*C_w *Treturn_total) - (md_hp* C_w * T[levels-1])  - (md_xy*C_w *T[levels-1])  -  (U_a*A*(T[levels-1]-Toutdoor)) - (U_v2*(T[levels-2]-T[levels-1])))/(m*C_w);  //Treturn_total ....T_fhretur
 }</declaration>
 		<location id="id11" x="0" y="0">
 			<label kind="invariant" x="-10" y="17">T[0]' == (calculate_top()*60) &amp;&amp;
@@ -717,21 +639,21 @@ T[levels-1]' == (calculate_bottom()*60)</label>
 		<init ref="id11"/>
 	</template>
 	<template>
-		<name>BufferLevel</name>
+		<name>BufferLayer</name>
 		<parameter>const mid_t index</parameter>
-		<declaration>double calculate_level(){
+		<declaration>double calculate_layer(){
     if (md_hp &gt; md_fh)
-        return ((md_12*C_w *T[index- 1]) - (md_23*C_w *T[index])-  (U_a*A2*(T[index]-Toutdoor)) - (U_v1*(T[index-1]-T[index])) +  (U_v2*(T[index]-T[index+1])))/(m*C_w);
+        return ((md_xy*C_w *T[index- 1]) - (md_xy*C_w *T[index])-  (U_a*A*(T[index]-Toutdoor)) - (U_v1*(T[index-1]-T[index])) +  (U_v2*(T[index]-T[index+1])))/(m*C_w);
     else
-        return ((md_23*C_w *T[index+1])  - (md_12*C_w *T[index]) - (U_a*A2*(T[index]-Toutdoor)) - (U_v1*(T[index-1]-T[index])) + (U_v2*(T[index]-T[index+1])))/(m*C_w);
+        return ((md_xy*C_w *T[index+1])  - (md_xy*C_w *T[index]) - (U_a*A*(T[index]-Toutdoor)) - (U_v1*(T[index-1]-T[index])) + (U_v2*(T[index]-T[index+1])))/(m*C_w);
 }</declaration>
 		<location id="id12" x="0" y="0">
-			<label kind="invariant" x="-10" y="17">T[index]' == (calculate_level()*60)</label>
+			<label kind="invariant" x="-10" y="17">T[index]' == (calculate_layer()*60)</label>
 		</location>
 		<init ref="id12"/>
 	</template>
 	<template>
-		<name>Update_Buffer_Values</name>
+		<name>BufferUpdate</name>
 		<declaration>// Place local declarations here.
 clock t;
 const double min=1.0;
@@ -761,10 +683,10 @@ Room1 = Room(0, Rie1, Rea10, Rea12, Rea14, Pr1, Mf1, Ce1, Rih1, Ch1, Aw1,Tforwar
 Room2 = Room(1, Rie2, Rea20, Rea21, Rea23, Pr2, Mf2, Ce2, Rih2, Ch2, Aw2,Tforward , massflow[1], last_temperature, Ti[0], Ti[2]);
 Room3 = Room(2, Rie3, Rea30, Rea32, Rea34, Pr3, Mf3, Ce3, Rih3, Ch3, Aw3,Tforward , massflow[2], last_temperature, Ti[1], Ti[3]);
 Room4 = Room(3, Rie4, Rea40, Rea41, Rea43, Pr4, Mf4, Ce4, Rih4, Ch4, Aw4,Tforward , massflow[3], last_temperature, Ti[0], Ti[2]);
-Process = Update_Buffer_Values();
-Process2 = Buffer_Tank();
+Process = BufferUpdate();
+Process2 = BufferTank();
 
-system Room1,Room2,Room3,Room4, Fetch_Data, Optimization, Controller, Process, Process2, BufferLevel;
+system Room1,Room2,Room3,Room4, DataReader, FitnessFunction, Controller, Process, Process2, BufferLayer;
     </system>
 	<queries>
 		<option key="--total-runs" value="200"/>
