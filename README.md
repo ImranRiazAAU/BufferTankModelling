@@ -8,16 +8,7 @@ The *libraries* folder contains C Libraries we created to perform the following 
 * read strategy decisions
 * store data from the experiments into external files<br />
 
-The *uppaal* folder contains the uppaal stratego tool package.<br />
-The *models* folder contains the uppaal models of the buffer tank and mixing loop that we use for evaluation (EM.xml) and learning (LM.xml).<br />
+The *models* folder contains the Uppaal Stratego models of the buffer tank and mixing loop that we use for evaluation (EM.xml) and learning (LM.xml).<br />
 
-To open learning model, write the following command from the home directory of the project:
+To open the models, one must install Uppaal Stratego, which can be downloaded for free for non-commercial academic applications. The tool can be downloaded from the following [link](https://uppaal.org/).
 
-```bash
-./run_LM_gui.sh
-```
-To open evaluation model, write the following command from the home directory of the project:
-
-```bash
-./run_EM_gui.sh
-```
